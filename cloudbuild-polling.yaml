@@ -1,0 +1,39 @@
+# Google Cloud Build configuration for polling + keep-alive deployment
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/telegram-quiz-bot-polling', '.']
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/telegram-quiz-bot-polling']
+  
+  # Deploy container image to Cloud Run with polling + keep-alive mode
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'telegram-quiz-bot-polling'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/telegram-quiz-bot-polling'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'DEPLOYMENT_MODE=polling_keepalive'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '1'
+      - '--cpu'
+      - '1'
+      - '--memory'
+      - '512Mi'
+      - '--timeout'
+      - '3600'
+
+images:
+  - 'gcr.io/$PROJECT_ID/telegram-quiz-bot-polling'

@@ -1,0 +1,29 @@
+# Google Cloud Build configuration for automatic deployment
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/telegram-quiz-bot', '.']
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/telegram-quiz-bot']
+  
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'telegram-quiz-bot'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/telegram-quiz-bot'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'WEBHOOK_URL=https://telegram-quiz-bot-[HASH]-uc.a.run.app'
+
+images:
+  - 'gcr.io/$PROJECT_ID/telegram-quiz-bot'

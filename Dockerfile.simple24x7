@@ -1,0 +1,41 @@
+# Simple Dockerfile for 24/7 Telegram Bot (No gcloud required)
+# Use this with Google Cloud Console web interface
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Flask for HTTP server
+RUN pip install --no-cache-dir flask requests
+
+# Copy all application files
+COPY . .
+
+# Create non-root user for security
+RUN useradd -m -u 1000 botuser && chown -R botuser:botuser /app
+USER botuser
+
+# Expose port for HTTP server
+EXPOSE 8080
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8080
+
+# Health check to ensure service stays alive
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run the 24/7 keep-alive script
+CMD ["python", "keep_bot_alive_24x7.py"]

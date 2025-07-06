@@ -1,0 +1,48 @@
+# Google Cloud Build configuration for 24/7 Telegram Bot deployment
+# This builds and deploys the bot with continuous operation features
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-f', 'Dockerfile.cloud24x7',
+      '-t', 'gcr.io/$PROJECT_ID/telegram-quiz-bot-24x7:latest',
+      '.'
+    ]
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/telegram-quiz-bot-24x7:latest']
+
+  # Deploy to Cloud Run with 24/7 optimized settings
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: [
+      'run', 'deploy', 'telegram-quiz-bot-24x7',
+      '--image', 'gcr.io/$PROJECT_ID/telegram-quiz-bot-24x7:latest',
+      '--platform', 'managed',
+      '--region', 'us-central1',
+      '--allow-unauthenticated',
+      '--set-env-vars', 'DEPLOYMENT_MODE=cloud_run_24x7',
+      '--set-env-vars', 'ENVIRONMENT=production',
+      '--min-instances', '1',
+      '--max-instances', '2',
+      '--cpu', '1',
+      '--memory', '1Gi',
+      '--timeout', '3600',
+      '--concurrency', '1000',
+      '--port', '8080'
+    ]
+
+# Specify the images to be pushed to Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/telegram-quiz-bot-24x7:latest'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Timeout for the entire build
+timeout: '1200s'
